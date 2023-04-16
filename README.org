@@ -1,0 +1,36 @@
+#+title: =jami-bot=: An extendable Elisp chat bot for the distributed, private messenger Jami
+
+An extendable chat bot for the distributed, private messenger GNU Jami written
+in Emacs Lisp. It interacts with the locally-installed Jami daemon via D-Bus and
+reacts to both plain text messages and file transfers sent to local accounts.
+Further processing of either or both can be configured by adding functions to
+the abnormal hooks, =jami-bot-text-message-functions= and
+=jami-bot-data-transfer-functions=, respectively.
+
+Additionally, the bot allows special actions to be triggered by sending a
+text message starting with an exclamation mark and a command keyword.
+Further commands than the ones included can be configured by mapping them to
+functions through =jami-bot-command-function-alist=.
+
+Set up =jami-bot= by executing =jami-bot-register=. This will set up the
+message handler, =jami-bot--messageReceived-handler=, to be called on the
+=messageReceived= D-Bus signal.
+
+* Demo
+The extension =org-jami-bot= showcases how =jami-bot= can be used as a
+note-taking interface on the go: [[https://hoowl.se/org-jami-bot.html][Note-taking on the go: Capturing messages and
+images sent via Jami in Org mode]]
+* Extending functionality of =jami-bot=
+I have written two blog posts explaining the principles behind =jami-bot= and
+the Org mode extension =org-jami-bot=, respectively. These should provide you a
+good starting point to extend either package:
+
+- [[https://hoowl.se/jami-bot.html][An extendable GNU Jami chat bot written in Elisp]]
+- [[https://hoowl.se/org-jami-bot.html][Note-taking on the go: Capturing messages and images sent via Jami in Org mode]]
+* Troubleshooting
+** Stuck messages / no reply from =jami-bot=
+Especially should your network connectivity drop out, Jami might not be able to sync messages and you will see no reply. Try to stop the Jami daemon:
+#+begin_src emacs-lisp
+killall jamid
+#+end_src
+and then run =M-x jami-bot-register= to restart it and register =jami-bot= to listen on the /messageReceived/ signal.
