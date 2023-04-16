@@ -8,7 +8,7 @@
 ;; Modified: April 15, 2023
 ;; Version: 0.0.1
 ;; Keywords: comm, jami, messenger, chat bot, dbus
-;; Homepage: https://gitlab.com/hanno/jami-bot
+;; Homepage: https://gitlab.com/hperrey/jami-bot
 ;; Package-Requires: ((emacs "27.1"))
 ;;
 ;; This file is not part of GNU Emacs.
