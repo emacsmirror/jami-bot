@@ -1,6 +1,6 @@
 ;;; jami-bot.el --- An extendable chat bot for the private messenger GNU Jami -*- lexical-binding: t; -*-
 ;;
-;; Copyright (C) 2023 Hanno Perrey
+;; Copyright (C) 2023 Free Software Foundation, Inc.
 ;;
 ;; Author: Hanno Perrey <http://gitlab.com/hperrey>
 ;; Maintainer: Hanno Perrey <hanno@hoowl.se>
