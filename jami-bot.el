@@ -1,7 +1,7 @@
 ;;; jami-bot.el --- An extendable chat bot for the private messenger GNU Jami -*- lexical-binding: t; -*-
-;;
+
 ;; Copyright (C) 2023 Free Software Foundation, Inc.
-;;
+
 ;; Author: Hanno Perrey <http://gitlab.com/hperrey>
 ;; Maintainer: Hanno Perrey <hanno@hoowl.se>
 ;; Created: April 15, 2023
@@ -10,27 +10,27 @@
 ;; Keywords: comm, jami, messenger, chat bot, dbus
 ;; Homepage: https://gitlab.com/hperrey/jami-bot
 ;; Package-Requires: ((emacs "27.1"))
-;;
+
 ;; This file is not part of GNU Emacs.
 ;;
-;;    This program is free software: you can redistribute it and/or modify
-;;    it under the terms of the GNU General Public License as published by
-;;    the Free Software Foundation, either version 3 of the License, or
-;;    (at your option) any later version.
+;; This program is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
 ;;
-;;    This program is distributed in the hope that it will be useful,
-;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
-;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-;;    GNU General Public License for more details.
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
 ;;
-;;    You should have received a copy of the GNU General Public License
-;;    along with this program.  If not, see <https://www.gnu.org/licenses/>.
-;;
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 ;;; Commentary:
 ;;
-;; An extendable chat bot for the distributed, private messenger Jami. It
+;; An extendable chat bot for the distributed, private messenger Jami.  It
 ;; interacts with the locally-installed Jami daemon via D-Bus and reacts to
-;; both plain text messages and file transfers sent to local accounts. Further
+;; both plain text messages and file transfers sent to local accounts.  Further
 ;; processing of either or both can be configured by adding functions to the
 ;; abnormal hooks, `jami-bot-text-message-functions' and
 ;; `jami-bot-data-transfer-functions', respectively.
@@ -40,7 +40,7 @@
 ;; Further commands than the ones included can be configured by mapping them to
 ;; functions through `jami-bot-command-function-alist'.
 ;;
-;; Set up `jami-bot' by executing `jami-bot-register'. This will set up the
+;; Set up `jami-bot' by executing `jami-bot-register'.  This will set up the
 ;; message handler, `jami-bot--messageReceived-handler', to be called on the
 ;; `messageReceived' D-Bus signal.
 ;;
@@ -51,31 +51,27 @@
 (defvar jami-bot-account-user-names nil
   "List of account user names that `jami-bot' handles messages for.
 
-        If set to nil then `jami-bot' will react to any message
-        send to a local account. The user name is also sometimes
-        referred to as address in Jami and should be a 40
-        character has such as
-        \"badac18e13ec1a6e1266600e457859afebfb9c46\".")
+If set to nil then `jami-bot' will react to any message
+send to a local account.  The user name is also sometimes
+referred to as address in Jami and should be a 40
+character has such as
+\"badac18e13ec1a6e1266600e457859afebfb9c46\".")
 
 (defvar jami-bot-command-function-alist
   '(("!ping" . jami-bot--command-function-ping)
     ("!help" . jami-bot--command-function-help))
   "Alist mapping command strings in message body to functions to be executed.
-
 Each command needs to start with an exclamation mark '!' and
-consist of a single (lowercase) word. The corresponding function needs to accept
-the account id, the conversation id and the message alist as
+consist of a single (lowercase) word.  The corresponding function needs to
+accept the account id, the conversation id and the message alist as
 arguments and return a string (that is sent as reply to the original message).")
 
 (defvar jami-bot-text-message-functions nil
   "A list of functions that will be called when processing a plain text message.
-
 Functions must take the ACCOUNT and CONVERSATION ids as well as
-the actual MSG as arguments. Their return value will be ignored.")
-
-(defvar jami-bot-download-path "~/jami/"
+the actual MSG as arguments.  Their return value will be ignored.")
+ (defvar jami-bot-download-path "~/jami/"
 "Path in which to store files downloaded from conversations.
-
 Will be created if not existing yet.")
 
 (defvar jami-bot-data-transfer-functions nil
@@ -83,21 +79,21 @@ Will be created if not existing yet.")
 
 Functions must take the ACCOUNT and CONVERSATION ids as well as
 the actual MSG and the local downloaded file name, DLNAME, as
-arguments. Their return value will be ignored.")
+arguments.  Their return value will be ignored.")
 
 (defvar jami-bot--jami-local-account-ids nil
   "List of `jami' local accounts user ids and name pairs.
 
-Caches output of dbus-methods 'getAccountList' and
-'getAccountDetails'. For internal use in `jami-bot'.")
+Caches output of dbus-methods \"getAccountList\" and
+\"getAccountDetails\". For internal use in `jami-bot'.")
 
 (defun jami-bot--messageReceived-handler (account conversation msg)
   "Handle messages from Jami's `messageReceived' D-Bus signal.
 
-  ACCOUNT and CONVERSATION are the corresponding ids to which the
-  MSG belongs to. The latter contains additional fields such as
-  `author' and `body'. The field `type' is used to identify which
-  function to call for further processing."
+ACCOUNT and CONVERSATION are the corresponding ids to which the
+MSG belongs to. The latter contains additional fields such as
+`author' and `body'. The field `type' is used to identify which
+function to call for further processing."
   ;; make sure we are not reacting to messages sent from our own local
   ;; account(s) or accounts we are not to monitor
   (unless jami-bot--jami-local-account-ids
@@ -160,7 +156,7 @@ Caches output of dbus-methods 'getAccountList' and
   "Ping the Jami daemon and register `jami-bot' handler for receiving messages."
   (interactive)
   (or (dbus-ping :session "cx.ring.Ring")
-      (error "Jami Daemon (jamid) not available through dbus. Please check Jami installation"))
+      (error "Jami Daemon (jamid) not available through dbus.  Please check Jami installation"))
   (dbus-register-signal :session "cx.ring.Ring"
                       "/cx/ring/Ring/ConfigurationManager"
                       "cx.ring.Ring.ConfigurationManager"
@@ -169,9 +165,8 @@ Caches output of dbus-methods 'getAccountList' and
 
 (defun jami-bot--process-text-message (account conversation msg)
   "Process plain text messages and parse the message body for commands.
-
-  ACCOUNT and CONVERSATION are the corresponding ids to which the
-  message MSG belongs to. Messages containing commands must start
+   ACCOUNT and CONVERSATION are the corresponding ids to which the
+  message MSG belongs to.  Messages containing commands must start
   with an exclamation mark (\"!\") followed by the single-word
   command. Each command is mapped to a function via
   `jami-bot-command-function-alist' which will be executed when
@@ -210,10 +205,10 @@ Caches output of dbus-methods 'getAccountList' and
                           account conversation msg))))
 
 (defun jami-bot--command-function-ping (_account _conversation msg)
-  "Return the string 'pong!' followed by the message's body.
+  "Return the string \"pong!\" followed by the message body.
 
-Example for a basic jami bot command handling function. Acts on MSG
-received via _ACCOUNT in _CONVERSATION. The latter two are unused."
+Example for a basic jami bot command handling function.  Acts on MSG
+received via _ACCOUNT in _CONVERSATION.  The latter two are unused."
   (let ((body (cadr (assoc-string "body" msg))))
     (format "pong! %s" body)))
 
@@ -230,10 +225,10 @@ which are used."
 (defun jami-bot--process-data-transfer (account conversation msg)
   "Process data transfer from received messages.
 
-  Downloads files to the path given by `jami-bot-download-path'
-  and calls the abnormal hook `jami-bot-data-transfer-functions'
-  for further processing. ACCOUNT and CONVERSATION are the
-  corresponding ids to which the message MSG belongs to."
+Downloads files to the path given by `jami-bot-download-path'
+and calls the abnormal hook `jami-bot-data-transfer-functions'
+for further processing.  ACCOUNT and CONVERSATION are the
+corresponding ids to which the message MSG belongs to."
   (let* ((id (cadr (assoc-string "id" msg)))
          (fileid (cadr (assoc-string "fileId" msg)))
          (filename (cadr (assoc-string "displayName" msg)))
@@ -252,9 +247,8 @@ which are used."
                     "/cx/ring/Ring/ConfigurationManager"
                     "cx.ring.Ring.ConfigurationManager"
                     ,method ,@(when args args))))
-
-(defun jami-bot-send-message (account conversation text &optional reply)
-  "Add TEXT to CONVERSATION via ACCOUNT. REPLY specifies a message id."
+ (defun jami-bot-send-message (account conversation text &optional reply)
+  "Add TEXT to CONVERSATION via ACCOUNT.  REPLY specifies a message id."
   (jami-bot--dbus-cfgmgr-call-method "sendMessage"
                                      account
                                      conversation
