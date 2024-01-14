@@ -48,38 +48,58 @@
 
 (require 'dbus)
 
-(defvar jami-bot-account-user-names nil
+;;;; Customization
+
+(defgroup jami-bot nil
+  "Automatically process messages via GNU Jami."
+  :group 'comm)
+
+(defcustom jami-bot-account-user-names nil
   "List of account user names that `jami-bot' handles messages for.
 
 If set to nil then `jami-bot' will react to any message
 send to a local account.  The user name is also sometimes
 referred to as address in Jami and should be a 40
 character has such as
-\"badac18e13ec1a6e1266600e457859afebfb9c46\".")
-
-(defvar jami-bot-command-function-alist
   '(("!ping" . jami-bot--command-function-ping)
     ("!help" . jami-bot--command-function-help))
+\"badac18e13ec1a6e1266600e457859afebfb9c46\"."
+  :group 'jami-bot
+  :type 'string)
+
+(defcustom jami-bot-command-function-alist
   "Alist mapping command strings in message body to functions to be executed.
 Each command needs to start with an exclamation mark '!' and
 consist of a single (lowercase) word.  The corresponding function needs to
 accept the account id, the conversation id and the message alist as
-arguments and return a string (that is sent as reply to the original message).")
+arguments and return a string (that is sent as reply to the original message)."
+  :group 'jami-bot
+  :type '(alist :key-type 'string :value-type 'function))
 
-(defvar jami-bot-text-message-functions nil
+(defcustom jami-bot-text-message-functions nil
   "A list of functions that will be called when processing a plain text message.
 Functions must take the ACCOUNT and CONVERSATION ids as well as
-the actual MSG as arguments.  Their return value will be ignored.")
- (defvar jami-bot-download-path "~/jami/"
-"Path in which to store files downloaded from conversations.
-Will be created if not existing yet.")
+the actual MSG as arguments.  Their return value will be ignored."
+  :group 'jami-bot
+  :type '(group 'function))
 
-(defvar jami-bot-data-transfer-functions nil
+
+(defcustom jami-bot-download-path "~/jami/"
+"Path in which to store files downloaded from conversations.
+Will be created if not existing yet."
+  :group 'jami-bot
+  :type '(directory))
+
+(defcustom jami-bot-data-transfer-functions nil
   "A list of functions that will be called when processing a data transfer message.
 
 Functions must take the ACCOUNT and CONVERSATION ids as well as
 the actual MSG and the local downloaded file name, DLNAME, as
-arguments.  Their return value will be ignored.")
+arguments.  Their return value will be ignored."
+  :group 'jami-bot
+  :type '(group 'function))
+
+;; Internal variables
 
 (defvar jami-bot--jami-local-account-ids nil
   "List of `jami' local accounts user ids and name pairs.
