@@ -60,9 +60,9 @@
 If set to nil then `jami-bot' will react to any message
 send to a local account.  The user name is also sometimes
 referred to as address in Jami and should be a 40
-character has such as
   '(("!ping" . jami-bot--command-function-ping)
     ("!help" . jami-bot--command-function-help))
+character hash such as
 \"badac18e13ec1a6e1266600e457859afebfb9c46\"."
   :group 'jami-bot
   :type 'string)
