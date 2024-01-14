@@ -5,8 +5,8 @@
 ;; Author: Hanno Perrey <http://gitlab.com/hperrey>
 ;; Maintainer: Hanno Perrey <hanno@hoowl.se>
 ;; Created: April 15, 2023
-;; Modified: April 15, 2023
-;; Version: 0.0.1
+;; Modified: January 14, 2024
+;; Version: 0.0.2
 ;; Keywords: comm, jami, messenger, chat bot, dbus
 ;; Homepage: https://gitlab.com/hperrey/jami-bot
 ;; Package-Requires: ((emacs "27.1"))
@@ -56,18 +56,17 @@
 
 (defcustom jami-bot-account-user-names nil
   "List of account user names that `jami-bot' handles messages for.
-
 If set to nil then `jami-bot' will react to any message
 send to a local account.  The user name is also sometimes
 referred to as address in Jami and should be a 40
-  '(("!ping" . jami-bot--command-function-ping)
-    ("!help" . jami-bot--command-function-help))
 character hash such as
 \"badac18e13ec1a6e1266600e457859afebfb9c46\"."
   :group 'jami-bot
   :type 'string)
 
 (defcustom jami-bot-command-function-alist
+    '(("!ping" . jami-bot--command-function-ping)
+    ("!help" . jami-bot--command-function-help))
   "Alist mapping command strings in message body to functions to be executed.
 Each command needs to start with an exclamation mark '!' and
 consist of a single (lowercase) word.  The corresponding function needs to
@@ -83,9 +82,8 @@ the actual MSG as arguments.  Their return value will be ignored."
   :group 'jami-bot
   :type '(group 'function))
 
-
 (defcustom jami-bot-download-path "~/jami/"
-"Path in which to store files downloaded from conversations.
+  "Path in which to store files downloaded from conversations.
 Will be created if not existing yet."
   :group 'jami-bot
   :type '(directory))
@@ -107,6 +105,8 @@ arguments.  Their return value will be ignored."
 Caches output of dbus-methods \"getAccountList\" and
 \"getAccountDetails\". For internal use in `jami-bot'.")
 
+;; Functions
+
 (defun jami-bot--messageReceived-handler (account conversation msg)
   "Handle messages from Jami's `messageReceived' D-Bus signal.
 
@@ -122,12 +122,12 @@ function to call for further processing."
         (type (cadr (assoc "type" msg))))
     (when (or
            (and jami-bot-account-user-names
-                 ;; account id should match a user name to be monitored
-                 (member (car (rassoc account jami-bot--jami-local-account-ids))
-                         jami-bot-account-user-names)
-                 ;; .. but msg should not be authored by ourselves
-                 (not (member author jami-bot-account-user-names)))
-            ;; no account filter: check msg not from local account
+                ;; account id should match a user name to be monitored
+                (member (car (rassoc account jami-bot--jami-local-account-ids))
+                        jami-bot-account-user-names)
+                ;; .. but msg should not be authored by ourselves
+                (not (member author jami-bot-account-user-names)))
+           ;; no account filter: check msg not from local account
            (and (not jami-bot-account-user-names)
                 (not (assoc author jami-bot--jami-local-account-ids))))
       (message "jami-bot received %s message from %s on account %s." type author account)
@@ -154,7 +154,7 @@ function to call for further processing."
           msg))))))
 
 (defun jami-bot--process-unknown-type (account conversation msg)
-"Handle messages of unknown type by sending an error message as reply.
+  "Handle messages of unknown type by sending an error message as reply.
 
   ACCOUNT and CONVERSATION are the corresponding ids to which the
   MSG belongs to."
@@ -178,23 +178,23 @@ function to call for further processing."
   (or (dbus-ping :session "cx.ring.Ring")
       (error "Jami Daemon (jamid) not available through dbus.  Please check Jami installation"))
   (dbus-register-signal :session "cx.ring.Ring"
-                      "/cx/ring/Ring/ConfigurationManager"
-                      "cx.ring.Ring.ConfigurationManager"
-                      "messageReceived"
-                      #'jami-bot--messageReceived-handler))
+                        "/cx/ring/Ring/ConfigurationManager"
+                        "cx.ring.Ring.ConfigurationManager"
+                        "messageReceived"
+                        #'jami-bot--messageReceived-handler))
 
 (defun jami-bot--process-text-message (account conversation msg)
   "Process plain text messages and parse the message body for commands.
-   ACCOUNT and CONVERSATION are the corresponding ids to which the
-  message MSG belongs to.  Messages containing commands must start
-  with an exclamation mark (\"!\") followed by the single-word
-  command. Each command is mapped to a function via
-  `jami-bot-command-function-alist' which will be executed when
-  the command is received.
+ACCOUNT and CONVERSATION are the corresponding ids to which the
+message MSG belongs to.  Messages containing commands must start
+with an exclamation mark (\"!\") followed by the single-word
+command. Each command is mapped to a function via
+`jami-bot-command-function-alist' which will be executed when
+the command is received.
 
-  If the message does not start with an exclamation mark, the
-  abnormal hook `jami-bot-text-message-functions' will be run for
-  further processing."
+If the message does not start with an exclamation mark, the
+abnormal hook `jami-bot-text-message-functions' will be run for
+further processing."
   (let ((body (cadr (assoc-string "body" msg))))
     ;; check for criteria handling first line of body as command
     ;;  - string starts with '!' and is a single word
@@ -207,12 +207,12 @@ function to call for further processing."
           (setcdr (assoc-string "body" msg)
                   (list (string-trim-left (string-remove-prefix cmd body))))
           (if fcn
-            ;; call function and reply with return value
-            (jami-bot-reply-to-message
-             account
-             conversation
-             msg
-             (funcall fcn account conversation msg))
+              ;; call function and reply with return value
+              (jami-bot-reply-to-message
+               account
+               conversation
+               msg
+               (funcall fcn account conversation msg))
             ;; no matching command defined:
             ;; report error as reply to msg
             (jami-bot-reply-to-message
@@ -263,11 +263,12 @@ corresponding ids to which the message MSG belongs to."
 (defun jami-bot--dbus-cfgmgr-call-method (method &rest args)
   "Call Jami ConfigurationManager dbus METHOD with arguments ARGS."
   (apply #'dbus-call-method `(:session
-                    "cx.ring.Ring"
-                    "/cx/ring/Ring/ConfigurationManager"
-                    "cx.ring.Ring.ConfigurationManager"
-                    ,method ,@(when args args))))
- (defun jami-bot-send-message (account conversation text &optional reply)
+                              "cx.ring.Ring"
+                              "/cx/ring/Ring/ConfigurationManager"
+                              "cx.ring.Ring.ConfigurationManager"
+                              ,method ,@(when args args))))
+
+(defun jami-bot-send-message (account conversation text &optional reply)
   "Add TEXT to CONVERSATION via ACCOUNT.  REPLY specifies a message id."
   (jami-bot--dbus-cfgmgr-call-method "sendMessage"
                                      account
