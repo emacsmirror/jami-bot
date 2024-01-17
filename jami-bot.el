@@ -5,8 +5,8 @@
 ;; Author: Hanno Perrey <http://gitlab.com/hperrey>
 ;; Maintainer: Hanno Perrey <hanno@hoowl.se>
 ;; Created: April 15, 2023
-;; Modified: January 14, 2024
-;; Version: 0.0.2
+;; Modified: January 17, 2024
+;; Version: 0.0.3
 ;; Keywords: comm, jami, messenger, chat bot, dbus
 ;; Homepage: https://gitlab.com/hperrey/jami-bot
 ;; Package-Requires: ((emacs "27.1"))
