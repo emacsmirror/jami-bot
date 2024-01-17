@@ -1,6 +1,6 @@
 ;;; jami-bot.el --- An extendable chat bot for the private messenger GNU Jami -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2023 Free Software Foundation, Inc.
+;; Copyright (C) 2023, 2024 Free Software Foundation, Inc.
 
 ;; Author: Hanno Perrey <http://gitlab.com/hperrey>
 ;; Maintainer: Hanno Perrey <hanno@hoowl.se>
@@ -73,14 +73,14 @@ consist of a single (lowercase) word.  The corresponding function needs to
 accept the account id, the conversation id and the message alist as
 arguments and return a string (that is sent as reply to the original message)."
   :group 'jami-bot
-  :type '(alist :key-type 'string :value-type 'function))
+  :type '(alist :key-type string :value-type function))
 
 (defcustom jami-bot-text-message-functions nil
   "A list of functions that will be called when processing a plain text message.
 Functions must take the ACCOUNT and CONVERSATION ids as well as
 the actual MSG as arguments.  Their return value will be ignored."
   :group 'jami-bot
-  :type '(group 'function))
+  :type '(group function))
 
 (defcustom jami-bot-download-path "~/jami/"
   "Path in which to store files downloaded from conversations.
@@ -95,9 +95,9 @@ Functions must take the ACCOUNT and CONVERSATION ids as well as
 the actual MSG and the local downloaded file name, DLNAME, as
 arguments.  Their return value will be ignored."
   :group 'jami-bot
-  :type '(group 'function))
+  :type '(group function))
 
-;; Internal variables
+;;;; Internal variables
 
 (defvar jami-bot--jami-local-account-ids nil
   "List of `jami' local accounts user ids and name pairs.
@@ -105,7 +105,7 @@ arguments.  Their return value will be ignored."
 Caches output of dbus-methods \"getAccountList\" and
 \"getAccountDetails\". For internal use in `jami-bot'.")
 
-;; Functions
+;;;; Functions
 
 (defun jami-bot--messageReceived-handler (account conversation msg)
   "Handle messages from Jami's `messageReceived' D-Bus signal.
@@ -254,7 +254,9 @@ corresponding ids to which the message MSG belongs to."
          (filename (cadr (assoc-string "displayName" msg)))
          (dlpath (file-name-as-directory
                   (expand-file-name jami-bot-download-path)))
-         (dlname (concat dlpath (format-time-string "%Y%m%d-%H%M") "_" filename)))
+         (dlname (expand-file-name
+		  (concat (format-time-string "%Y%m%d-%H%M") "_" filename)
+		  dlpath)))
     (unless (file-directory-p dlpath) (make-directory dlpath 't))
     (message "jami-bot: downloading file %s" dlname)
     (jami-bot--dbus-cfgmgr-call-method "downloadFile" account conversation id fileid dlname)
