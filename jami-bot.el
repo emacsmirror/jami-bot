@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2023, 2024 Free Software Foundation, Inc.
 
-;; Author: Hanno Perrey <http://gitlab.com/hperrey>
+;; Author: Hanno Perrey <hanno@hoowl.se>
 ;; Maintainer: Hanno Perrey <hanno@hoowl.se>
 ;; Created: April 15, 2023
 ;; Modified: January 17, 2024
