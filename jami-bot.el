@@ -5,8 +5,8 @@
 ;; Author: Hanno Perrey <hanno@hoowl.se>
 ;; Maintainer: Hanno Perrey <hanno@hoowl.se>
 ;; Created: April 15, 2023
-;; Modified: January 17, 2024
-;; Version: 0.0.3
+;; Modified: February 4, 2024
+;; Version: 0.0.4
 ;; Keywords: comm, jami, messenger, chat bot, dbus
 ;; Homepage: https://gitlab.com/hperrey/jami-bot
 ;; Package-Requires: ((emacs "27.1"))
@@ -36,13 +36,20 @@
 ;; `jami-bot-data-transfer-functions', respectively.
 ;;
 ;; Additionally, the bot allows special actions to be triggered by sending a
-;; text message starting with an exclamation mark and a command keyword.
-;; Further commands than the ones included can be configured by mapping them to
-;; functions through `jami-bot-command-function-alist'.
+;; text message starting with an exclamation mark and a command keyword.  Further
+;; commands than the ones included can be configured by mapping them to
+;; functions through `jami-bot-command-function-alist'.  See, for example, the
+;; function `jami-bot--command-function-ping' which is by default called when
+;; a message starts with the "!ping" command string.
 ;;
 ;; Set up `jami-bot' by executing `jami-bot-register'.  This will set up the
 ;; message handler, `jami-bot--messageReceived-handler', to be called on the
-;; `messageReceived' D-Bus signal.
+;; `messageReceived' D-Bus signal.  You will need to run `jami-bot-register'
+;; whenever you restart Emacs or the Jami process.
+;;
+;; `jami-bot' offers several customizable variables, e.g. to limit message
+;; processing to certain local accounts or to specify a directory to store
+;; downloaded files in.
 ;;
 ;;; Code:
 
@@ -68,17 +75,30 @@ character hash such as
     '(("!ping" . jami-bot--command-function-ping)
     ("!help" . jami-bot--command-function-help))
   "Alist mapping command strings in message body to functions to be executed.
-Each command needs to start with an exclamation mark '!' and
-consist of a single (lowercase) word.  The corresponding function needs to
-accept the account id, the conversation id and the message alist as
-arguments and return a string (that is sent as reply to the original message)."
+Each command string needs to start with an exclamation mark '!'
+and consist of a single (lowercase) word.  The corresponding
+function needs to accept the account id, the conversation id and
+the message alist as arguments and return a string (that is sent
+as reply to the original message).
+
+A received text message that starts with a given command string
+will be passed on to the respective handling function for further
+processing.
+
+See documentation for the handler function,
+`jami-bot--messageReceived-handler' for details on the message
+format."
   :group 'jami-bot
   :type '(alist :key-type string :value-type function))
 
 (defcustom jami-bot-text-message-functions nil
   "A list of functions that will be called when processing a plain text message.
 Functions must take the ACCOUNT and CONVERSATION ids as well as
-the actual MSG as arguments.  Their return value will be ignored."
+the actual MSG alist as arguments.  Their return value will be ignored.
+
+See documentation for the handler function,
+`jami-bot--messageReceived-handler' for details on the message
+format."
   :group 'jami-bot
   :type '(group function))
 
@@ -92,8 +112,12 @@ Will be created if not existing yet."
   "A list of functions that will be called when processing a data transfer message.
 
 Functions must take the ACCOUNT and CONVERSATION ids as well as
-the actual MSG and the local downloaded file name, DLNAME, as
-arguments.  Their return value will be ignored."
+the actual MSG alist and the local downloaded file name, DLNAME, as
+arguments.  Their return value will be ignored.
+
+See documentation for the handler function,
+`jami-bot--messageReceived-handler' for details on the message
+format."
   :group 'jami-bot
   :type '(group function))
 
@@ -111,9 +135,30 @@ Caches output of dbus-methods \"getAccountList\" and
   "Handle messages from Jami's `messageReceived' D-Bus signal.
 
 ACCOUNT and CONVERSATION are the corresponding ids to which the
-MSG belongs to. The latter contains additional fields such as
-`author' and `body'. The field `type' is used to identify which
-function to call for further processing."
+MSG belongs to.  The MSG is an alist which contains various
+key/value pairs, depending on the message type.  These include:
+
+author     Message author id (fingerprint).
+body       Message body.
+id         Message id (fingerprint).
+timestamp  Time in seconds.
+type       String describing type, e.g. \"text/plain\"
+
+For file transfers, additional keys are present in MSG:
+displayName     File name chosen by sender.
+fileId          File id string.
+sha3sum         SHA3SUM of the file.
+totalSize       File size in bytes.
+
+The field `type' is used to identify which function to call for
+further processing, i.e.  `jami-bot--process-text-message' for
+text messages and `jami-bot--process-data-transfer' for data
+transfers.  Any other type is handled via
+`jami-bot--process-unknown-type'.
+
+This function is registered as handler through
+`jami-bot-register' which needs to be called once per session or
+after a restart of the Jami daemon process."
   ;; make sure we are not reacting to messages sent from our own local
   ;; account(s) or accounts we are not to monitor
   (unless jami-bot--jami-local-account-ids
@@ -173,7 +218,11 @@ function to call for further processing."
   (insert (completing-read "Pick a account user name to insert: " jami-bot--jami-local-account-ids)))
 
 (defun jami-bot-register ()
-  "Ping the Jami daemon and register `jami-bot' handler for receiving messages."
+  "Ping the Jami daemon and register `jami-bot' handler for receiving messages.
+
+This is necessary in order for `jami-bot' to be notified of any
+incoming messages and needs to be run once per Emacs session or
+after a restart of the Jami daemon process."
   (interactive)
   (or (dbus-ping :session "cx.ring.Ring")
       (error "Jami Daemon (jamid) not available through dbus.  Please check Jami installation"))
@@ -189,8 +238,9 @@ ACCOUNT and CONVERSATION are the corresponding ids to which the
 message MSG belongs to.  Messages containing commands must start
 with an exclamation mark (\"!\") followed by the single-word
 command. Each command is mapped to a function via
-`jami-bot-command-function-alist' which will be executed when
-the command is received.
+`jami-bot-command-function-alist' which will be executed when the
+command is received. The string returned by the function is sent
+as a reply to the message.
 
 If the message does not start with an exclamation mark, the
 abnormal hook `jami-bot-text-message-functions' will be run for
@@ -227,16 +277,28 @@ further processing."
 (defun jami-bot--command-function-ping (_account _conversation msg)
   "Return the string \"pong!\" followed by the message body.
 
-Example for a basic jami bot command handling function.  Acts on MSG
-received via _ACCOUNT in _CONVERSATION.  The latter two are unused."
+Example for a basic `jami-bot' command handling function.  Acts on
+MSG received via _ACCOUNT in _CONVERSATION.  The latter two are
+unused in this case.
+
+This function is intended to be mapped to a particular `jami-bot'
+command string by adding both to
+`jami-bot-command-function-alist'.
+
+See documentation for the handler function,
+`jami-bot--messageReceived-handler' for details on typical MSG
+alist key/value pairs."
   (let ((body (cadr (assoc-string "body" msg))))
     (format "pong! %s" body)))
 
 (defun jami-bot--command-function-help (_account _conversation _msg)
-  "Return a summary of available commands.
+  "Return a summary of all configured commands.
+
+Commands are configured and made available by adding them to
+`jami-bot-command-function-alist'.
 
 Acts on _MSG received via _ACCOUNT in _CONVERSATION, none of
-which are used."
+which are used in this particular command function."
   (let (result)
     (dolist (cmd jami-bot-command-function-alist (string-join result "\n"))
       (push (concat "- " (car cmd) " :: "
